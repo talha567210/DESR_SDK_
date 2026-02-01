@@ -1,0 +1,45 @@
+{
+  "name": "desr-ar-sdk",
+  "version": "1.0.0",
+  "description": "AR Restaurant Viewer SDK - Display 3D food models in augmented reality with multi-language support",
+  "main": "dist/desr.js",
+  "module": "src/index.js",
+  "types": "types/index.d.ts",
+  "scripts": {
+    "build": "webpack --mode production",
+    "build:dev": "webpack --mode development",
+    "watch": "webpack --mode development --watch",
+    "serve": "npx http-server . -p 8080"
+  },
+  "keywords": [
+    "ar",
+    "augmented-reality",
+    "3d",
+    "webgl",
+    "threejs",
+    "restaurant",
+    "menu",
+    "sdk"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "three": "^0.128.0"
+  },
+  "devDependencies": {
+    "webpack": "^5.75.0",
+    "webpack-cli": "^5.0.1",
+    "css-loader": "^6.7.3",
+    "style-loader": "^3.3.1",
+    "file-loader": "^6.2.0",
+    "url-loader": "^4.1.1"
+  },
+  "files": [
+    "dist/",
+    "src/",
+    "types/",
+    "styles/",
+    "assets/",
+    "README.md"
+  ]
+}

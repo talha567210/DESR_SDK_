@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Desr AR SDK - Basic Integration Example</title>
+  <link rel="stylesheet" href="../styles/style.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    
+    #ar-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+    }
+  </style>
+</head>
+<body>
+  <div id="ar-container">
+    <video id="video" autoplay muted playsinline></video>
+    <canvas id="ar-canvas"></canvas>
+    
+    <!-- Model Info Display -->
+    <div id="modelNameDisplay" class="model-name-display">
+      <h1 id="modelNameText" class="model-name-text">Loading...</h1>
+    </div>
+    
+    <div id="modelDescriptionDisplay" class="model-description-display">
+      <p id="modelDescriptionText" class="model-description-text"></p>
+      <p id="modelPriceText" class="model-price-text"></p>
+      <button id="orderButton" class="order-button">Order</button>
+    </div>
+    
+    <!-- Table Display -->
+    <div id="tableNumberDisplay" class="table-number-display">
+      <span id="tableNumberText" class="table-number-text">Table 1</span>
+    </div>
+    
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+      <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <div id="loadingText" class="loading-text">Loading Meals...</div>
+        <div id="loadingProgress" class="loading-progress">Initializing...</div>
+      </div>
+    </div>
+    
+    <!-- Error Message -->
+    <div id="errorMessage" class="error-message"></div>
+    
+    <!-- Navigation Arrows -->
+    <div id="prevModel" class="nav-arrow active">‹</div>
+    <div id="nextModel" class="nav-arrow active">›</div>
+  </div>
+
+  <!-- Dependencies -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
+  
+  <!-- Desr SDK -->
+  <script src="../dist/desr.js"></script>
+  
+  <script>
+    // Initialize SDK with basic configuration
+    const desr = new DesrSDK({
+      containerId: 'ar-container',
+      language: 'en',
+      assetPath: '../assets/models/',
+      
+      // Callbacks
+      onInit: (sdk) => {
+        console.log('✅ Desr SDK initialized!');
+        sdk.setTableNumber(1);
+      },
+      
+      onModelLoad: (modelKey, config, model) => {
+        console.log('📦 Model loaded:', modelKey);
+      },
+      
+      onOrderAdd: (order) => {
+        console.log('🍜 Order added:', order);
+        alert(`Order added: ${order.name} - ${order.price}`);
+      },
+      
+      onError: (error) => {
+        console.error('❌ Error:', error);
+      }
+    });
+
+    // Initialize
+    desr.init().catch(error => {
+      console.error('Failed to initialize SDK:', error);
+      document.getElementById('errorMessage').textContent = 
+        'Failed to initialize AR viewer. Please allow camera access.';
+      document.getElementById('errorMessage').style.display = 'block';
+    });
+
+    // Setup navigation
+    document.getElementById('prevModel').addEventListener('click', () => {
+      desr.previousModel();
+    });
+
+    document.getElementById('nextModel').addEventListener('click', () => {
+      desr.nextModel();
+    });
+
+    // Setup order button
+    document.getElementById('orderButton').addEventListener('click', () => {
+      desr.addOrder();
+    });
+  </script>
+</body>
+</html>
