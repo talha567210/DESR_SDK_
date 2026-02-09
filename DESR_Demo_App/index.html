@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DESR AR Restaurant Demo</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍜</text></svg>">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Welcome Screen -->
+    <div id="welcomeScreen" class="screen active">
+      <div class="welcome-content">
+        <h1>Welcome to Sushi Master</h1>
+        <p>Experience our delicious dishes in Augmented Reality!</p>
+        
+        <div class="input-group">
+          <label for="tableNumber">Enter your table number:</label>
+          <input type="number" id="tableNumber" min="1" max="17" placeholder="Table number (1-17)" value="1">
+          <button id="confirmTableBtn" class="btn-primary">Confirm Table</button>
+        </div>
+        
+        <div class="language-selector">
+          <label>Choose Language:</label>
+          <select id="languageSelector">
+            <option value="en">English</option>
+            <option value="ja">日本語 (Japanese)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- AR View Screen -->
+    <div id="arViewScreen" class="screen">
+      <div id="arContainer" class="ar-container">
+        <video id="video" autoplay muted playsinline></video>
+        <canvas id="arCanvas"></canvas>
+        
+        <!-- UI Elements -->
+        <div id="modelNameDisplay" class="model-name-display">
+          <h1 id="modelNameText" class="model-name-text">Loading...</h1>
+        </div>
+        
+        <div id="modelDescriptionDisplay" class="model-description-display">
+          <p id="modelDescriptionText" class="model-description-text"></p>
+          <p id="modelPriceText" class="model-price-text"></p>
+          <button id="orderButton" class="order-button">Order</button>
+        </div>
+        
+        <div id="tableNumberDisplay" class="table-number-display">
+          <span id="tableNumberText" class="table-number-text">Table 1</span>
+        </div>
+        
+        <div id="loadingOverlay" class="loading-overlay">
+          <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div id="loadingText" class="loading-text">Loading Meals...</div>
+            <div id="loadingProgress" class="loading-progress">Initializing...</div>
+          </div>
+        </div>
+        
+        <div id="errorMessage" class="error-message"></div>
+        
+        <div id="prevModel" class="nav-arrow nav-left">‹</div>
+        <div id="nextModel" class="nav-arrow nav-right">›</div>
+        
+        <button id="menuToggle" class="menu-toggle">☰ MENU</button>
+        <button id="showOrderBtn" class="show-order-btn">Your Order</button>
+      </div>
+      
+      <!-- Menu Panel -->
+      <div id="menuPanel" class="menu-panel">
+        <div class="panel-header">
+          <h2>Menu List 🍜️</h2>
+          <button id="closeMenu" class="close-btn">×</button>
+        </div>
+        <div class="menu-categories">
+          <div class="category">
+            <h3>Demo Models</h3>
+            <ul id="modelList" class="model-list"></ul>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Order Summary -->
+      <div id="orderSummary" class="order-summary">
+        <div class="summary-header">
+          <h2>Your Orders</h2>
+          <button id="closeOrderSummary" class="close-btn">×</button>
+        </div>
+        <div id="orderList" class="order-list"></div>
+        <div class="summary-footer">
+          <div id="totalAmount" class="total-amount">Total: ¥0</div>
+          <button id="clearOrderBtn" class="btn-secondary">Clear All</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dependencies -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
+  
+  <!-- DESR SDK - copied from source -->
+  <script src="desr-sdk.js"></script>
+  
+  <script src="app.js"></script>
+</body>
+</html>
