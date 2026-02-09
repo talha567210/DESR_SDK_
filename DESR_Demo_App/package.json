@@ -1,0 +1,27 @@
+{
+  "name": "desr-demo-app",
+  "version": "1.0.0",
+  "description": "Demo application showcasing the DESR AR SDK for restaurant menu visualization",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "build": "echo 'Building project...'"
+  },
+  "keywords": [
+    "ar",
+    "augmented-reality",
+    "restaurant",
+    "menu",
+    "3d-models",
+    "desr-sdk"
+  ],
+  "author": "DESR Developer",
+  "license": "MIT",
+  "dependencies": {
+    "three": "^0.128.0"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
