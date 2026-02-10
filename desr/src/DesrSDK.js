@@ -1,11 +1,13 @@
 import { ARViewer } from './core/ARViewer.js';
 import { LanguageManager } from './core/LanguageManager.js';
 import { OrderManager } from './core/OrderManager.js';
+import { ServerConnector } from './core/ServerConnector.js';
 import { UIManager } from './ui/UIManager.js';
 import defaultConfig from './config/defaultConfig.js';
 
 /**
  * Desr SDK - Main SDK class for AR Restaurant Viewer
+ * Now with server integration support
  */
 export class DesrSDK {
     constructor(userConfig = {}) {
@@ -17,6 +19,10 @@ export class DesrSDK {
         this.orderManager = new OrderManager();
         this.uiManager = null;
         this.arViewer = null;
+
+        // Server connector (optional - for production with backend)
+        this.serverConnector = null;
+        this.isServerConnected = false;
 
         // State
         this.currentModelIndex = 0;
@@ -284,10 +290,174 @@ export class DesrSDK {
         }
     }
 
+    // ============================================
+    // SERVER INTEGRATION METHODS
+    // ============================================
+
+    /**
+     * Connect to server backend
+     * @param {Object} options - Server connection options
+     * @returns {Promise<Object>} Connection status
+     */
+    async connectToServer(options = {}) {
+        try {
+            const serverUrl = options.serverUrl || this.config.serverUrl || 'http://localhost:3001';
+
+            this.serverConnector = new ServerConnector({
+                serverUrl,
+                tableNumber: this.tableNumber
+            });
+
+            // Set up server event listeners
+            this.serverConnector.on('orderStatusChanged', (data) => {
+                if (this.config.onOrderStatusChange) {
+                    this.config.onOrderStatusChange(data);
+                }
+            });
+
+            this.serverConnector.on('orderReady', (data) => {
+                if (this.config.onOrderReady) {
+                    this.config.onOrderReady(data);
+                }
+            });
+
+            this.serverConnector.on('connected', () => {
+                this.isServerConnected = true;
+                console.log('Connected to DESR server');
+            });
+
+            this.serverConnector.on('disconnected', () => {
+                this.isServerConnected = false;
+                console.log('Disconnected from DESR server');
+            });
+
+            await this.serverConnector.connect();
+            this.isServerConnected = true;
+
+            return {
+                connected: true,
+                sessionId: this.serverConnector.sessionId
+            };
+        } catch (error) {
+            console.error('Error connecting to server:', error);
+            if (this.config.onError) {
+                this.config.onError(error);
+            }
+            return { connected: false, error: error.message };
+        }
+    }
+
+    /**
+     * Load menu configuration from server
+     * @returns {Promise<Object>} Menu configuration
+     */
+    async loadMenuFromServer() {
+        if (!this.serverConnector) {
+            throw new Error('Not connected to server. Call connectToServer() first.');
+        }
+
+        try {
+            const menuConfig = await this.serverConnector.getMenu(this.languageManager.currentLanguage);
+
+            // Merge server menu with existing config
+            this.config.models = { ...this.config.models, ...menuConfig.models };
+
+            // Update model keys
+            this.modelKeys = Object.keys(this.config.models);
+
+            // Add translations from server
+            if (menuConfig.translations) {
+                Object.keys(menuConfig.translations).forEach(lang => {
+                    this.languageManager.addTranslations(lang, menuConfig.translations[lang]);
+                });
+            }
+
+            console.log('Menu loaded from server:', this.modelKeys.length, 'items');
+            return menuConfig;
+        } catch (error) {
+            console.error('Error loading menu from server:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Submit current orders to server (kitchen)
+     * @param {string} notes - Optional order notes
+     * @returns {Promise<Object>} Submitted order
+     */
+    async submitOrderToServer(notes = '') {
+        if (!this.serverConnector) {
+            throw new Error('Not connected to server. Call connectToServer() first.');
+        }
+
+        const orders = this.orderManager.getOrders();
+
+        if (orders.length === 0) {
+            throw new Error('No orders to submit');
+        }
+
+        try {
+            // Format orders for server
+            const items = orders.map(order => ({
+                modelKey: order.modelKey,
+                name: order.name,
+                price: typeof order.price === 'string'
+                    ? parseFloat(order.price.replace(/[^0-9.-]+/g, ''))
+                    : order.price,
+                quantity: order.quantity || 1
+            }));
+
+            const submittedOrder = await this.serverConnector.submitOrder(items, notes);
+
+            // Clear local orders after successful submission
+            this.orderManager.clearOrders();
+
+            if (this.config.onOrderSubmitted) {
+                this.config.onOrderSubmitted(submittedOrder);
+            }
+
+            console.log('Order submitted to kitchen:', submittedOrder.id);
+            return submittedOrder;
+        } catch (error) {
+            console.error('Error submitting order to server:', error);
+            if (this.config.onError) {
+                this.config.onError(error);
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Get orders for current table from server
+     * @returns {Promise<Array>} Orders from server
+     */
+    async getServerOrders() {
+        if (!this.serverConnector) {
+            throw new Error('Not connected to server. Call connectToServer() first.');
+        }
+
+        return await this.serverConnector.getTableOrders();
+    }
+
+    /**
+     * Check if connected to server
+     * @returns {boolean} Connection status
+     */
+    isConnectedToServer() {
+        return this.isServerConnected && this.serverConnector !== null;
+    }
+
     /**
      * Cleanup and dispose SDK
      */
     destroy() {
+        // Disconnect from server
+        if (this.serverConnector) {
+            this.serverConnector.disconnect();
+            this.serverConnector = null;
+            this.isServerConnected = false;
+        }
+
         if (this.arViewer) {
             this.arViewer.dispose();
         }
@@ -298,3 +468,4 @@ export class DesrSDK {
 }
 
 export default DesrSDK;
+

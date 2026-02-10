@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DESR Kitchen Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .header h1 {
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .header h1::before {
+            content: '👨‍🍳';
+        }
+        
+        .status-bar {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-dot.connected {
+            background: #4ade80;
+        }
+        
+        .status-dot.disconnected {
+            background: #f87171;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .stats-bar {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem 2rem;
+            display: flex;
+            gap: 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            min-width: 120px;
+        }
+        
+        .stat-card .label {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            margin-bottom: 0.25rem;
+        }
+        
+        .stat-card .value {
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+        
+        .stat-card.pending .value { color: #fbbf24; }
+        .stat-card.preparing .value { color: #60a5fa; }
+        .stat-card.ready .value { color: #4ade80; }
+        
+        .main {
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .order-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .order-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .order-card.new {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .order-header {
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .order-header.pending { background: linear-gradient(90deg, rgba(251, 191, 36, 0.3), transparent); }
+        .order-header.confirmed { background: linear-gradient(90deg, rgba(168, 85, 247, 0.3), transparent); }
+        .order-header.preparing { background: linear-gradient(90deg, rgba(96, 165, 250, 0.3), transparent); }
+        .order-header.ready { background: linear-gradient(90deg, rgba(74, 222, 128, 0.3), transparent); }
+        
+        .order-id {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .table-number {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .order-body {
+            padding: 1rem 1.5rem;
+        }
+        
+        .order-items {
+            list-style: none;
+            margin-bottom: 1rem;
+        }
+        
+        .order-items li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .order-items li:last-child {
+            border-bottom: none;
+        }
+        
+        .item-name {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .item-qty {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.1rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+        
+        .order-time {
+            font-size: 0.85rem;
+            opacity: 0.7;
+            margin-bottom: 1rem;
+        }
+        
+        .order-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        
+        .btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .btn-confirm {
+            background: linear-gradient(135deg, #a855f7, #7c3aed);
+            color: white;
+        }
+        
+        .btn-prepare {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+        }
+        
+        .btn-ready {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+        }
+        
+        .btn-complete {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+            color: white;
+        }
+        
+        .btn-cancel {
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            border: 1px solid #f87171;
+        }
+        
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 4rem;
+            opacity: 0.5;
+        }
+        
+        .empty-state .icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideInRight 0.3s ease-out;
+            z-index: 1000;
+        }
+        
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        /* Sound indicator */
+        .sound-toggle {
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .sound-toggle:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>Kitchen Dashboard</h1>
+        <div class="status-bar">
+            <div class="status-item">
+                <span class="status-dot" id="connectionStatus"></span>
+                <span id="connectionText">Connecting...</span>
+            </div>
+            <div class="sound-toggle" id="soundToggle" title="Toggle sound">🔔</div>
+        </div>
+    </header>
+    
+    <div class="stats-bar">
+        <div class="stat-card pending">
+            <div class="label">Pending</div>
+            <div class="value" id="pendingCount">0</div>
+        </div>
+        <div class="stat-card preparing">
+            <div class="label">Preparing</div>
+            <div class="value" id="preparingCount">0</div>
+        </div>
+        <div class="stat-card ready">
+            <div class="label">Ready</div>
+            <div class="value" id="readyCount">0</div>
+        </div>
+    </div>
+    
+    <main class="main" id="ordersContainer">
+        <div class="empty-state">
+            <div class="icon">📋</div>
+            <p>No active orders</p>
+        </div>
+    </main>
+    
+    <script>
+        // Configuration
+        const API_URL = window.location.origin;
+        const WS_URL = `ws://${window.location.host}/ws?type=kitchen`;
+        
+        // State
+        let orders = [];
+        let ws = null;
+        let soundEnabled = true;
+        
+        // DOM Elements
+        const ordersContainer = document.getElementById('ordersContainer');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const connectionText = document.getElementById('connectionText');
+        const pendingCount = document.getElementById('pendingCount');
+        const preparingCount = document.getElementById('preparingCount');
+        const readyCount = document.getElementById('readyCount');
+        const soundToggle = document.getElementById('soundToggle');
+        
+        // Initialize
+        async function init() {
+            await loadOrders();
+            connectWebSocket();
+            setupSoundToggle();
+        }
+        
+        // Load orders from API
+        async function loadOrders() {
+            try {
+                const response = await fetch(`${API_URL}/api/orders/active`);
+                orders = await response.json();
+                renderOrders();
+                updateStats();
+            } catch (error) {
+                console.error('Error loading orders:', error);
+            }
+        }
+        
+        // WebSocket connection
+        function connectWebSocket() {
+            ws = new WebSocket(WS_URL);
+            
+            ws.onopen = () => {
+                connectionStatus.className = 'status-dot connected';
+                connectionText.textContent = 'Connected';
+                console.log('WebSocket connected');
+            };
+            
+            ws.onclose = () => {
+                connectionStatus.className = 'status-dot disconnected';
+                connectionText.textContent = 'Disconnected';
+                console.log('WebSocket disconnected, reconnecting...');
+                setTimeout(connectWebSocket, 3000);
+            };
+            
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+            
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    handleWebSocketMessage(data);
+                } catch (error) {
+                    console.error('Error parsing WebSocket message:', error);
+                }
+            };
+        }
+        
+        // Handle WebSocket messages
+        function handleWebSocketMessage(data) {
+            console.log('WebSocket message:', data);
+            
+            switch (data.type) {
+                case 'new_order':
+                    // Add new order to list
+                    orders.unshift(data.order);
+                    renderOrders();
+                    updateStats();
+                    playNotificationSound();
+                    showNotification(`New order from Table ${data.order.table_number}`);
+                    break;
+                    
+                case 'order_status_changed':
+                    // Update order in list
+                    const index = orders.findIndex(o => o.id === data.order.id);
+                    if (index !== -1) {
+                        if (['completed', 'cancelled'].includes(data.order.status)) {
+                            orders.splice(index, 1);
+                        } else {
+                            orders[index] = data.order;
+                        }
+                        renderOrders();
+                        updateStats();
+                    }
+                    break;
+            }
+        }
+        
+        // Render orders
+        function renderOrders() {
+            if (orders.length === 0) {
+                ordersContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📋</div>
+                        <p>No active orders</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            ordersContainer.innerHTML = orders.map(order => `
+                <div class="order-card" data-id="${order.id}">
+                    <div class="order-header ${order.status}">
+                        <span class="order-id">#${order.id.slice(-8).toUpperCase()}</span>
+                        <span class="table-number">Table ${order.table_number}</span>
+                    </div>
+                    <div class="order-body">
+                        <ul class="order-items">
+                            ${order.items.map(item => `
+                                <li>
+                                    <span class="item-name">
+                                        ${item.quantity && item.quantity > 1 ? `<span class="item-qty">×${item.quantity}</span>` : ''}
+                                        ${item.name}
+                                    </span>
+                                    <span class="item-price">${typeof item.price === 'number' ? '¥' + item.price.toLocaleString() : item.price}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                        <div class="order-time">
+                            ⏱️ ${formatTime(order.created_at)}
+                        </div>
+                        <div class="order-actions">
+                            ${getActionButtons(order)}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Add event listeners
+            document.querySelectorAll('.btn[data-action]').forEach(btn => {
+                btn.addEventListener('click', handleAction);
+            });
+        }
+        
+        // Get action buttons based on status
+        function getActionButtons(order) {
+            switch (order.status) {
+                case 'pending':
+                    return `
+                        <button class="btn btn-confirm" data-action="confirmed" data-id="${order.id}">Confirm</button>
+                        <button class="btn btn-cancel" data-action="cancelled" data-id="${order.id}">Cancel</button>
+                    `;
+                case 'confirmed':
+                    return `
+                        <button class="btn btn-prepare" data-action="preparing" data-id="${order.id}">Start Preparing</button>
+                        <button class="btn btn-cancel" data-action="cancelled" data-id="${order.id}">Cancel</button>
+                    `;
+                case 'preparing':
+                    return `
+                        <button class="btn btn-ready" data-action="ready" data-id="${order.id}">Mark Ready</button>
+                    `;
+                case 'ready':
+                    return `
+                        <button class="btn btn-complete" data-action="completed" data-id="${order.id}">Complete</button>
+                    `;
+                default:
+                    return '';
+            }
+        }
+        
+        // Handle button action
+        async function handleAction(event) {
+            const action = event.target.dataset.action;
+            const orderId = event.target.dataset.id;
+            
+            try {
+                const response = await fetch(`${API_URL}/api/orders/${orderId}/status`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: action })
+                });
+                
+                if (response.ok) {
+                    const updatedOrder = await response.json();
+                    const index = orders.findIndex(o => o.id === orderId);
+                    if (index !== -1) {
+                        if (['completed', 'cancelled'].includes(updatedOrder.status)) {
+                            orders.splice(index, 1);
+                        } else {
+                            orders[index] = updatedOrder;
+                        }
+                        renderOrders();
+                        updateStats();
+                    }
+                }
+            } catch (error) {
+                console.error('Error updating order:', error);
+            }
+        }
+        
+        // Update statistics
+        function updateStats() {
+            pendingCount.textContent = orders.filter(o => o.status === 'pending').length;
+            preparingCount.textContent = orders.filter(o => o.status === 'preparing' || o.status === 'confirmed').length;
+            readyCount.textContent = orders.filter(o => o.status === 'ready').length;
+        }
+        
+        // Format time
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = Math.floor((now - date) / 1000 / 60);
+            
+            if (diff < 1) return 'Just now';
+            if (diff < 60) return `${diff} min ago`;
+            return date.toLocaleTimeString();
+        }
+        
+        // Play notification sound
+        function playNotificationSound() {
+            if (!soundEnabled) return;
+            
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = 800;
+                oscillator.type = 'sine';
+                gainNode.gain.value = 0.3;
+                
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + 0.2);
+                
+                setTimeout(() => {
+                    const osc2 = audioContext.createOscillator();
+                    osc2.connect(gainNode);
+                    osc2.frequency.value = 1000;
+                    osc2.type = 'sine';
+                    osc2.start();
+                    osc2.stop(audioContext.currentTime + 0.2);
+                }, 200);
+            } catch (e) {
+                console.log('Could not play sound');
+            }
+        }
+        
+        // Show notification
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+        
+        // Setup sound toggle
+        function setupSoundToggle() {
+            soundToggle.addEventListener('click', () => {
+                soundEnabled = !soundEnabled;
+                soundToggle.textContent = soundEnabled ? '🔔' : '🔕';
+            });
+        }
+        
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>
